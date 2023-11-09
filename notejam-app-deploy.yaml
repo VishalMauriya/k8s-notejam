@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notejam-deployment
+spec:
+  replicas: 3 
+  selector:
+    matchLabels:
+      app: notejam
+  template:
+    metadata:
+      labels:
+        app: notejam
+    spec:
+      containers:
+      - name: notejam-app
+        image: vishalm04/notejam-k8s
+        ports:
+        - containerPort: 8080
+        env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: pg-secret
+                  key: user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pg-secret
+                  key: password
+            - name: POSTGRES_HOST
+              value: "postgres-service"
+            - name: DB_ENGINE
+              valueFrom: 
+                configMapKeyRef:
+                  name: pg-config
+                  key: engine
+            - name: POSTGRES_DBNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: pg-config
+                  key: dbname
+            - name: DB_PORT
+              valueFrom: 
+                configMapKeyRef:
+                  name: pg-config
+                  key: port
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notejam-app
+spec:
+  type: NodePort
+  ports:
+     - protocol: TCP
+       port: 80
+       targetPort: 8080
+  selector:
+    app: notejam
